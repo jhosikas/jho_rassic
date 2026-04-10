@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JHOrassic - Missions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-red: #ff003c;
+            --dark-red: #8b0000;
+            --bg-black: #050505;
+            --neon-blue: #00d4ff;
+            --neon-green: #00ff88;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Orbitron", sans-serif; }
+        body { background: var(--bg-black); overflow: hidden; color: white; height: 100vh; }
+
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 60px; position: fixed; top: 0; width: 100%; z-index: 1000;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+        }
+        .logo { color: white; font-size: 20px; letter-spacing: 4px; text-decoration: none; font-weight: bold; }
+        nav ul { display: flex; list-style: none; }
+        nav ul li { margin-left: 30px; }
+        nav ul li a { text-decoration: none; color: white; font-size: 14px; padding: 8px 15px; transition: 0.3s; }
+        nav ul li a:hover, nav ul li a.active { color: #ff0000; background: rgba(255,0,0,0.15); box-shadow: 0 0 20px #ff0000; border-radius: 5px; }
+
+        #mission-clock {
+            position: fixed; top: 100px; right: 60px;
+            background: rgba(0,0,0,0.8); border: 2px solid var(--neon-red);
+            padding: 10px 20px; border-radius: 10px; z-index: 1001; opacity: 0; transition: opacity 1s;
+        }
+        #timer-display { font-size: 28px; color: var(--neon-red); text-shadow: 0 0 10px var(--neon-red); }
+
+        #bg-video { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; object-fit: cover; filter: brightness(0.4); }
+
+        .container {
+            position: absolute; left: 50%; top: 60%; transform: translate(-50%, -50%);
+            width: 2000px; height: 2000px; display: flex; justify-content: center; align-items: center;
+        }
+
+        .dragon {
+            width: 220px; height: 220px; background-image: url('IMAGE2.JPeG');
+            background-size: cover; background-position: center;
+            border: 4px solid var(--neon-red); border-radius: 50%;
+            z-index: 10; cursor: pointer; box-shadow: 0 0 30px var(--dark-red);
+            animation: breathe 3s infinite ease-in-out;
+        }
+
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 50px var(--neon-red); } }
+
+        .game {
+            position: absolute; width: 180px; height: 180px;
+            background: rgba(0,0,0,0.85); border: 2px solid var(--neon-red);
+            border-radius: 15px; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; gap: 6px;
+            cursor: pointer; transition: 0.5s; opacity: 0; pointer-events: none;
+        }
+        .container.active .game { opacity: 1; pointer-events: auto; }
+
+        .game:nth-child(2) { transform: translate(0, -280px); }
+        .game:nth-child(3) { transform: translate(280px, -100px); }
+        .game:nth-child(4) { transform: translate(200px, 220px); }
+        .game:nth-child(5) { transform: translate(-200px, 220px); }
+        .game:nth-child(6) { transform: translate(-280px, -100px); }
+
+        .game.completed {
+            border-color: var(--neon-green) !important;
+            box-shadow: 0 0 25px var(--neon-green) !important;
+        }
+        .game.completed .mission-label { color: var(--neon-green); }
+        .game.completed .mission-status { color: var(--neon-green); }
+
+        .mission-label { font-size: 11px; letter-spacing: 2px; }
+        .mission-status { font-size: 9px; color: gray; letter-spacing: 2px; }
+
+        #mission-panel {
+            display: none;
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 450px; height: 550px;
+            background: #000;
+            border: 4px solid var(--neon-red);
+            box-shadow: 0 0 100px rgba(255,0,60,0.8);
+            border-radius: 20px;
+            z-index: 9999;
+            overflow: hidden;
+        }
+        #mission-panel.visible { display: block; }
+        #mission-panel iframe { width: 100%; height: 100%; border: none; background: transparent; }
+
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.85);
+            z-index: 9998; backdrop-filter: blur(10px);
+        }
+        .overlay.visible { display: block; }
+
+        /* ── Countdown overlay ──────────────────────── */
+        #countdown-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            z-index: 99998;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        #countdown-overlay.active { display: flex; }
+
+        #countdown-number {
+            font-size: 140px;
+            font-weight: bold;
+            color: var(--neon-green);
+            text-shadow: 0 0 60px var(--neon-green), 0 0 120px var(--neon-green);
+            animation: pulse-count 1s ease-in-out;
+        }
+        @keyframes pulse-count {
+            0%   { transform: scale(1.6); opacity: 0; }
+            40%  { transform: scale(1);   opacity: 1; }
+            80%  { transform: scale(1);   opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+        #countdown-label {
+            font-size: 13px; letter-spacing: 8px;
+            color: rgba(0,255,136,0.5); margin-top: 20px;
+        }
+
+        /* ── Confetti canvas ────────────────────────── */
+        #confetti-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 99999;
+            display: none;
+        }
+
+        /* ── Victory screen ─────────────────────────── */
+        #victory-screen {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.97);
+            z-index: 99999;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+        }
+        #victory-screen.active { display: flex; }
+
+        .v-nodes {
+            color: var(--neon-green); font-size: 11px; letter-spacing: 6px;
+            margin-bottom: 20px; opacity: 0;
+            animation: fadeSlideUp 0.7s 0.2s forwards;
+        }
+        .v-mission {
+            color: var(--neon-green); font-size: 48px; font-weight: bold;
+            letter-spacing: 8px; margin-bottom: 30px; opacity: 0;
+            text-shadow: 0 0 40px var(--neon-green), 0 0 80px var(--neon-green);
+            animation: fadeSlideUp 0.7s 0.7s forwards;
+        }
+        .v-tagline {
+            color: rgba(255,255,255,0.35); font-size: 10px;
+            letter-spacing: 4px; margin-bottom: 40px; opacity: 0;
+            animation: fadeSlideUp 0.7s 1.1s forwards;
+        }
+        .v-divider {
+            width: 300px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+            margin-bottom: 36px; opacity: 0;
+            animation: fadeSlideUp 0.7s 1.4s forwards;
+        }
+        .v-stats {
+            display: flex; gap: 60px; margin-bottom: 48px; opacity: 0;
+            animation: fadeSlideUp 0.7s 1.6s forwards;
+        }
+        .v-stat { text-align: center; }
+        .v-stat-label { font-size: 9px; letter-spacing: 3px; color: rgba(255,255,255,0.3); margin-bottom: 6px; }
+        .v-stat-value { font-size: 20px; color: var(--neon-green); text-shadow: 0 0 15px var(--neon-green); }
+
+        .v-btn {
+            opacity: 0;
+            animation: fadeSlideUp 0.7s 2s forwards;
+            background: none; border: 2px solid var(--neon-green);
+            color: var(--neon-green); padding: 13px 34px;
+            font-family: 'Orbitron'; font-size: 11px;
+            letter-spacing: 3px; cursor: pointer; transition: 0.3s;
+        }
+        .v-btn:hover { background: var(--neon-green); color: #000; }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* scan-line effect on victory */
+        #victory-screen::before {
+            content: '';
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,255,136,0.015) 2px,
+                rgba(0,255,136,0.015) 4px
+            );
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="logo">JHOrassic</a>
+    <ul>
+        <li><a href="index.html">LOBBY</a></li>
+        <li><a href="database.html">DATABASE</a></li>
+        <li><a href="game.html" class="active">MISSIONS</a></li>
+        <li><a href="enlist.html" id="nav-enlist">ENLIST</a></li>
+        <li><a href="comms.html">COMMS</a></li>
+    </ul>
+    <div id="session-status" style="font-size: 10px; color: var(--neon-blue); border-left: 1px solid #333; padding-left: 15px; display: none;">
+        OP: <span id="active-codename" style="color: var(--neon-red);"></span>
+    </div>
+</nav>
+
+<div id="mission-clock">
+    <div style="font-size:10px; letter-spacing:2px;">TIME REMAINING</div>
+    <span id="timer-display">10:00</span>
+</div>
+
+<video autoplay muted loop id="bg-video">
+    <source src="VIDEO3.mp4" type="video/mp4">
+</video>
+
+<div class="overlay" id="overlay" onclick="closeGame()"></div>
+
+<div id="mission-panel">
+    <iframe id="mission-frame" src="" allowtransparency="true"></iframe>
+</div>
+
+<div class="container" id="mission-hub">
+    <div class="dragon" onclick="startMissions()"></div>
+    <div class="game" data-mission="VHAGAR" onclick="openMission(this)">
+        <span class="mission-label">VHAGAR</span>
+        <span class="mission-status">STANDBY</span>
+    </div>
+    <div class="game" data-mission="SYRAX" onclick="openMission(this)">
+        <span class="mission-label">SYRAX</span>
+        <span class="mission-status">STANDBY</span>
+    </div>
+    <div class="game" data-mission="DRACARYS" onclick="openMission(this)">
+        <span class="mission-label">DRACARYS</span>
+        <span class="mission-status">STANDBY</span>
+    </div>
+    <div class="game" data-mission="RHAEGAL" onclick="openMission(this)">
+        <span class="mission-label">RHAEGAL</span>
+        <span class="mission-status">STANDBY</span>
+    </div>
+    <div class="game" data-mission="BALERION" onclick="openMission(this)">
+        <span class="mission-label">BALERION</span>
+        <span class="mission-status">STANDBY</span>
+    </div>
+</div>
+
+<!-- Countdown overlay -->
+<div id="countdown-overlay">
+    <div id="countdown-number">3</div>
+    <div id="countdown-label">ALL NODES SECURED — INITIATING DEBRIEF</div>
+</div>
+
+<!-- Confetti canvas -->
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Victory screen -->
+<div id="victory-screen">
+    <div class="v-nodes">ALL NODES SECURED</div>
+    <div class="v-mission">MISSION COMPLETE</div>
+    <div class="v-tagline">SYSTEM FULLY COMPROMISED — JHÖRASSIC DOMINATES</div>
+    <div class="v-divider"></div>
+    <div class="v-stats">
+        <div class="v-stat">
+            <div class="v-stat-label">OPERATIVE</div>
+            <div class="v-stat-value" id="v-codename">—</div>
+        </div>
+        <div class="v-stat">
+            <div class="v-stat-label">TIME REMAINING</div>
+            <div class="v-stat-value" id="v-time">—</div>
+        </div>
+        <div class="v-stat">
+            <div class="v-stat-label">NODES CLEARED</div>
+            <div class="v-stat-value">5 / 5</div>
+        </div>
+    </div>
+    <button class="v-btn" onclick="resetAll()">RESTART OPERATION</button>
+</div>
+
+<script>
+    let timeLeft = 600;
+    let timerRunning = false;
+    let timerLoop;
+    let finishTimeLeft = null; // time left when all missions completed
+
+    const missionFiles = {
+        "VHAGAR": "mission1.html",
+        "SYRAX": "mission2.html",
+        "DRACARYS": "MISSION3.HTML",
+        "RHAEGAL": "mission4.html",
+        "BALERION": "mission5.html",
+    };
+
+    function missionKey(name) {
+        return `jhOrassic_${name.replace(/ /g, '_')}`;
+    }
+
+    function getSavedState(missionName) {
+        try {
+            return JSON.parse(sessionStorage.getItem(missionKey(missionName)));
+        } catch { return null; }
+    }
+
+    function saveMissionState(missionName, state) {
+        try {
+            const existing = getSavedState(missionName) || {};
+            sessionStorage.setItem(missionKey(missionName), JSON.stringify({ ...existing, ...state }));
+        } catch(e) {}
+    }
+
+    function formatTime(secs) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${m}:${s < 10 ? '0' + s : s}`;
+    }
+
+    function markCompleted(el, triggerVictoryCheck = true) {
+        el.classList.add('completed');
+        el.querySelector('.mission-status').innerText = 'SECURED ✓';
+        if (triggerVictoryCheck) checkAllMissionsComplete();
+    }
+
+    function checkAllMissionsComplete() {
+        const allDone = Array.from(document.querySelectorAll('.game'))
+            .every(el => el.classList.contains('completed'));
+        if (allDone) {
+            finishTimeLeft = timeLeft;
+            sessionStorage.setItem('jhAllComplete', 'true');
+            sessionStorage.setItem('jhFinishTime', finishTimeLeft);
+            clearInterval(timerLoop);
+            timerRunning = false;
+            document.getElementById('mission-clock').style.opacity = '0';
+            startCountdownThenVictory();
+        }
+    }
+
+    function updateTimerDisplay() {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        document.getElementById('timer-display').innerText =
+            `${mins}:${secs < 10 ? '0' + secs : secs}`;
+    }
+
+    function startTimerLoop() {
+        timerLoop = setInterval(() => {
+            timeLeft--;
+            sessionStorage.setItem('jhTimer', timeLeft);
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timerLoop);
+                sessionStorage.removeItem('jhTimer');
+                alert("SYSTEM LOCKDOWN: MISSION FAILED");
+                resetAll();
+            }
+        }, 1000);
+    }
+
+    function startMissions() {
+        if (timerRunning) return;
+        timerRunning = true;
+        document.getElementById('mission-hub').classList.add('active');
+        document.getElementById('mission-clock').style.opacity = '1';
+        sessionStorage.setItem('jhTimer', timeLeft);
+        startTimerLoop();
+    }
+
+    function openMission(element) {
+        if (!timerRunning) {
+            alert("ACCESS DENIED: ACTIVATE THE HUB FIRST");
+            return;
+        }
+
+        const missionName = element.getAttribute('data-mission');
+        const file = missionFiles[missionName];
+        const panel   = document.getElementById('mission-panel');
+        const frame   = document.getElementById('mission-frame');
+        const overlay = document.getElementById('overlay');
+
+        try {
+            const sessionRaw = sessionStorage.getItem('jhActiveSession');
+            if (sessionRaw) {
+                let sessionData = JSON.parse(sessionRaw);
+                const key = missionName.toLowerCase().replace('mission ', 'm');
+                if (sessionData.plays && sessionData.plays[key] !== undefined) {
+                    sessionData.plays[key] += 1;
+                    sessionStorage.setItem('jhActiveSession', JSON.stringify(sessionData));
+                }
+            }
+        } catch(e) {}
+
+        const saved = sessionStorage.getItem(missionKey(missionName));
+        const stateParam = saved ? `?state=${encodeURIComponent(saved)}` : '';
+        frame.src = (file || "") + stateParam;
+
+        panel.classList.add('visible');
+        overlay.classList.add('visible');
+    }
+
+    function closeGame() {
+        document.getElementById('mission-panel').classList.remove('visible');
+        document.getElementById('overlay').classList.remove('visible');
+        document.getElementById('mission-frame').src = "about:blank";
+    }
+
+    window.addEventListener('message', ({ data }) => {
+        const { action, mission, state } = data;
+
+        if (action === "saveState") {
+            saveMissionState(mission, state);
+        }
+
+        if (action === "missionComplete") {
+            saveMissionState(mission, { completed: true });
+            const el = document.querySelector(`[data-mission="${mission}"]`);
+            if (el) markCompleted(el, true);
+            closeGame();
+        }
+
+        if (action === "closeGame") {
+            closeGame();
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+
+        // 1. Restore mission states
+        document.querySelectorAll('.game').forEach(el => {
+            const key = el.getAttribute('data-mission');
+            const saved = getSavedState(key);
+            if (saved && saved.completed) markCompleted(el, false);
+        });
+
+        // 2. If already won, go straight to victory (no countdown replay)
+        if (sessionStorage.getItem('jhAllComplete') === 'true') {
+            const savedFinish = sessionStorage.getItem('jhFinishTime');
+            finishTimeLeft = savedFinish !== null ? parseInt(savedFinish) : null;
+            showVictoryScreen();
+            return;
+        }
+
+        // 3. Restore timer
+        const savedTime = sessionStorage.getItem('jhTimer');
+        if (savedTime !== null) {
+            timeLeft = parseInt(savedTime);
+            if (timeLeft > 0) {
+                timerRunning = true;
+                document.getElementById('mission-hub').classList.add('active');
+                document.getElementById('mission-clock').style.opacity = '1';
+                updateTimerDisplay();
+                startTimerLoop();
+            }
+        }
+
+        // 4. Restore codename in nav
+        try {
+            const sessionRaw = sessionStorage.getItem('jhActiveSession');
+            if (sessionRaw) {
+                const data = JSON.parse(sessionRaw);
+                document.getElementById('session-status').style.display = 'block';
+                document.getElementById('active-codename').innerText = data.user || "UNKNOWN";
+            }
+        } catch(e) {}
+    });
+
+    // ── Countdown → Victory ───────────────────────────────────────────
+    function startCountdownThenVictory() {
+        const overlay = document.getElementById('countdown-overlay');
+        const numEl   = document.getElementById('countdown-number');
+        overlay.classList.add('active');
+
+        let count = 3;
+        numEl.textContent = count;
+
+        // Kick off first pulse immediately
+        void numEl.offsetWidth; // reflow to restart animation
+
+        const tick = setInterval(() => {
+            count--;
+            if (count <= 0) {
+                clearInterval(tick);
+                overlay.classList.remove('active');
+                showVictoryScreen();
+            } else {
+                numEl.style.animation = 'none';
+                void numEl.offsetWidth;
+                numEl.style.animation = '';
+                numEl.textContent = count;
+            }
+        }, 1100);
+    }
+
+    // ── Victory screen ────────────────────────────────────────────────
+    function showVictoryScreen() {
+        // Populate stats
+        try {
+            const sessionRaw = sessionStorage.getItem('jhActiveSession');
+            const codename = sessionRaw ? (JSON.parse(sessionRaw).user || "UNKNOWN") : "UNKNOWN";
+            document.getElementById('v-codename').textContent = codename;
+        } catch(e) {
+            document.getElementById('v-codename').textContent = "UNKNOWN";
+        }
+
+        const ft = finishTimeLeft !== null ? finishTimeLeft : parseInt(sessionStorage.getItem('jhFinishTime') || '0');
+        document.getElementById('v-time').textContent = isNaN(ft) ? '--:--' : formatTime(ft);
+
+        document.getElementById('victory-screen').classList.add('active');
+        document.getElementById('confetti-canvas').style.display = 'block';
+        startConfetti();
+    }
+
+    // ── Confetti ──────────────────────────────────────────────────────
+    function startConfetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const colors = ['#00ff88', '#00d4ff', '#ffffff', '#aaffcc', '#00ffcc'];
+        const particles = Array.from({ length: 160 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * -canvas.height,
+            w: Math.random() * 8 + 4,
+            h: Math.random() * 14 + 6,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            speed: Math.random() * 2.5 + 1.2,
+            drift: (Math.random() - 0.5) * 1.2,
+            spin: (Math.random() - 0.5) * 0.12,
+            angle: Math.random() * Math.PI * 2,
+            opacity: Math.random() * 0.5 + 0.5
+        }));
+
+        let frame;
+        let elapsed = 0;
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            elapsed++;
+            particles.forEach(p => {
+                p.y += p.speed;
+                p.x += p.drift;
+                p.angle += p.spin;
+                // fade after 8 seconds
+                if (elapsed > 480) p.opacity -= 0.004;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.opacity);
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.angle);
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 6;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+
+                if (p.y > canvas.height) {
+                    p.y = -20;
+                    p.x = Math.random() * canvas.width;
+                    p.opacity = elapsed > 480 ? 0 : Math.random() * 0.5 + 0.5;
+                }
+            });
+
+            const allGone = particles.every(p => p.opacity <= 0);
+            if (!allGone) {
+                frame = requestAnimationFrame(draw);
+            } else {
+                canvas.style.display = 'none';
+            }
+        }
+
+        draw();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    }
+
+    // ── Reset everything ──────────────────────────────────────────────
+    function resetAll() {
+        [
+            'jhTimer', 'jhAllComplete', 'jhFinishTime',
+            'jhOrassic_MISSION_1', 'jhOrassic_MISSION_2', 'jhOrassic_MISSION_3',
+            'jhOrassic_MISSION_4', 'jhOrassic_MISSION_5'
+        ].forEach(k => sessionStorage.removeItem(k));
+        location.reload();
+    }
+</script>
+</body>
+</html>

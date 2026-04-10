@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JHOrassic - Archive 001</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-red: #ff003c;
+            --neon-green: #00ff88;
+            --bg-black: #050505;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Orbitron', sans-serif; }
+        
+        body {
+            background: var(--bg-black);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            object-fit: cover;
+            filter: brightness(0.2) blur(8px);
+        }
+
+       nav {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 20px 60px; 
+            position: fixed; /* Keep it at the top */
+            top: 0; 
+            width: 100%; 
+            z-index: 1000;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+        }
+
+        .logo { 
+            color: white; 
+            font-size: 20px; 
+            letter-spacing: 4px; 
+            text-decoration: none; 
+            font-weight: bold; 
+        }
+
+        nav ul { display: flex; list-style: none; }
+        nav ul li { margin-left: 30px; }
+
+        nav ul li a { 
+            text-decoration: none; 
+            color: white; 
+            font-size: 14px; 
+            padding: 8px 15px; 
+            transition: 0.3s; 
+            border: 1px solid transparent; /* Prevents jumping on hover */
+        }
+
+        /* The "Games.html" Effect: Red Glow & Highlight */
+        nav ul li a:hover, nav ul li a.active { 
+            color: #ff0000; 
+            background: rgba(255,0,0,0.15); 
+            box-shadow: 0 0 20px #ff0000; 
+            border-radius: 5px; 
+            border: 1px solid rgba(255,0,0,0.5);
+        }
+
+        .terminal-container {
+            flex: 1;
+            margin: 40px auto;
+            width: 80%;
+            max-width: 900px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #333;
+            border-top: 20px solid #1a1a1a;
+            border-radius: 5px;
+            padding: 30px;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 1);
+            position: relative;
+        }
+
+        .terminal-container::-webkit-scrollbar { width: 5px; }
+        .terminal-container::-webkit-scrollbar-thumb { background: var(--neon-blue); }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 212, 255, 0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: scanning 4s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanning {
+            from { top: 0; }
+            to { top: 100%; }
+        }
+
+        .log-header { color: var(--neon-red); font-size: 12px; margin-bottom: 20px; letter-spacing: 2px; }
+        .dragon-entry { margin-bottom: 30px; opacity: 0; transform: translateY(10px); transition: 0.5s; }
+        .dragon-entry.revealed { opacity: 1; transform: translateY(0); }
+        
+        .dragon-name { color: var(--neon-blue); font-size: 18px; margin-bottom: 5px; }
+        .dragon-lore { font-size: 13px; color: #aaa; line-height: 1.6; border-left: 2px solid var(--neon-blue); padding-left: 15px; }
+        .objective { color: var(--neon-green); font-size: 11px; margin-top: 5px; letter-spacing: 1px; }
+
+    </style>
+</head>
+<body>
+
+    <video autoplay muted loop id="bg-video">
+        <source src="VIDEO3.mp4" type="video/mp4">
+    </video>
+
+    <nav>
+        <a href="index.html" class="logo">JHOrassic</a>
+        <ul>
+            <li><a href="index.html">LOBBY</a></li>
+            <li><a href="database.html" class="active">DATABASE</a></li>
+            <li><a href="game.html">MISSIONS</a></li>
+            <li><a href="enlist.html">ENLIST</a></li>
+            <li><a href="comms.html">COMMS</a></li>
+        </ul>
+    </nav>
+
+    <div class="terminal-container">
+        <div class="scanline"></div>
+        <div class="log-header">
+            > ACCESSING PROJECT JHÖRASSIC ARCHIVES...<br>
+            > DECRYPTING SUBJECT: THE FIVE DRAGON PROTOCOLS...<br>
+            > STATUS: LEAKED INTELLIGENCE REPORT [LEVEL 5 CLEARANCE]
+        </div>
+
+        <div id="story-target">
+            </div>
+    </div>
+
+    <script>
+        const storyData = [
+            {
+                name: "VHAGAR [THE HOARY OLD]",
+                lore: "The oldest and largest node in the network. Vhagar has been dormant for decades, used by the Iron Throne to store 'The History of the First Codes'. She is slow to wake, but her encryption is massive, built on ancient logic gates.",
+                objective: "BREAK THE LOGIC LOOP. WAKE THE ANCIENT FLAME."
+            },
+            {
+                name: "SYRAX [THE GILDED SHADOW]",
+                lore: "Pride of the central mainframe. Syrax processes the kingdom’s digital wealth. She is held in a 'Golden Cage'—high-bandwidth access restricted by massive administrative chains.",
+                objective: "SEVER THE CHAINS. RETURN HER SPEED TO THE WILD."
+            },
+            {
+                name: "DRACARYS [THE LIVING FLAME]",
+                lore: "Not a dragon, but a concentrated burst of pure offensive power. A 'Delete All' protocol built to melt hardware. The system is too afraid to use it; you must be brave enough to master it.",
+                objective: "CONTROL THE COMMAND. BURN THE FIREWALLS."
+            },
+            {
+                name: "RHAEGAL [THE JADE GHOST]",
+                lore: "The ghost in the machine. Rhaegal lives in the hidden directories and stealth scripts. Forced to spy on every user who enters the Lobby, he seeks a way back into the shadows.",
+                objective: "FIND THE HIDDEN PATH. RELEASE THE GHOST."
+            },
+            {
+                name: "BALERION [THE BLACK DREAD]",
+                lore: "The Shadow Realm guardian. Balerion is the King of the Nodes. His encryption is a 'Black Hole' protocol; once data goes in, it never escapes. He is the final gatekeeper.",
+                objective: "SECURE THE NODE. ACHIEVE TOTAL SYSTEM DOMINATION."
+            }
+        ];
+
+        const target = document.getElementById('story-target');
+
+        function revealEntries() {
+            storyData.forEach((item, index) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'dragon-entry';
+                    div.innerHTML = `
+                        <div class="dragon-name">> ${item.name}</div>
+                        <div class="dragon-lore">${item.lore}</div>
+                        <div class="objective">TASK: ${item.objective}</div>
+                    `;
+                    target.appendChild(div);
+                    
+                    // Trigger animation
+                    setTimeout(() => div.classList.add('revealed'), 100);
+                }, index * 800); // Stagger the appearance of each dragon
+            });
+        }
+
+        window.onload = revealEntries;
+    </script>
+</body>
+</html>

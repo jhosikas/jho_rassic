@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JHOrassic - Communications</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-red: #ff003c;
+            --neon-green: #00ff88;
+            --bg-black: #050505;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Orbitron', sans-serif; }
+        
+        body {
+            background: var(--bg-black);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            object-fit: cover;
+            filter: brightness(0.25) blur(10px);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 60px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+        }
+
+        .logo { color: white; font-size: 20px; letter-spacing: 4px; text-decoration: none; font-weight: bold; }
+        nav ul { display: flex; list-style: none; }
+        nav ul li { margin-left: 30px; }
+        nav ul li a { text-decoration: none; color: white; font-size: 14px; padding: 8px 15px; transition: 0.3s; }
+
+        nav ul li a:hover, nav ul li a.active { 
+            color: #ff0000; 
+            background: rgba(255,0,0,0.15); 
+            box-shadow: 0 0 20px #ff0000; 
+            border-radius: 5px; 
+            border: 1px solid rgba(255,0,0,0.5);
+        }
+
+        .terminal-container {
+            flex: 1;
+            margin: 100px auto 40px;
+            width: 85%;
+            max-width: 800px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid var(--neon-blue);
+            padding: 40px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .header {
+            color: var(--neon-blue);
+            font-size: 14px;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .signal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        /* Radar Link Style */
+        .radar-box {
+            position: relative;
+            padding: 20px;
+            border: 1px solid #222;
+            text-align: center;
+        }
+
+        .radar-pulse {
+            width: 15px;
+            height: 15px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            position: relative;
+        }
+
+        .radar-pulse::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%; height: 100%;
+            border: 2px solid var(--neon-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { width: 100%; height: 100%; opacity: 1; }
+            100% { width: 400%; height: 400%; opacity: 0; }
+        }
+
+        .radar-box a {
+            color: var(--neon-green);
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+
+        /* Form Styling */
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input, textarea {
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-left: 2px solid var(--neon-blue);
+            margin-bottom: 20px;
+            padding: 12px;
+            color: white;
+            font-family: 'Orbitron';
+            outline: none;
+        }
+
+        input:focus, textarea:focus {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        button {
+            background: var(--neon-blue);
+            color: black;
+            border: none;
+            padding: 15px;
+            cursor: pointer;
+            font-family: 'Orbitron';
+            font-weight: bold;
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: white;
+            box-shadow: 0 0 20px white;
+        }
+
+        .static-text {
+            font-size: 10px;
+            color: #444;
+            margin-top: 20px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+
+    <video autoplay muted loop id="bg-video">
+        <source src="VIDEO3.mp4" type="video/mp4">
+    </video>
+
+    <nav>
+        <a href="index.html" class="logo">JHOrassic</a>
+        <ul>
+            <li><a href="index.html">LOBBY</a></li>
+            <li><a href="database.html">DATABASE</a></li>
+            <li><a href="game.html">MISSIONS</a></li>
+            <li><a href="enlist.html">ENLIST</a></li>
+            <li><a href="comms.html" class="active">COMMS</a></li>
+        </ul>
+    </nav>
+
+    <div class="terminal-container">
+        <div class="header">> ESTABLISHING SECURE BROADCAST...</div>
+
+        <div class="signal-grid">
+            <div class="contact-area">
+                <div class="contact-form">
+                    <input type="text" placeholder="OPERATIVE_ID" required>
+                    <input type="email" placeholder="RETURN_SIGNAL_ADDRESS" required>
+                    <textarea placeholder="ENCRYPTED_MESSAGE_DATA..." rows="5" required></textarea>
+                    <button type="submit">TRANSMIT TO VOID</button>
+                </div>
+            </div>
+
+            <div class="info-area">
+                <div class="radar-box">
+                    <div class="radar-pulse"></div>
+                    <p style="font-size: 10px; color: #888; margin-bottom: 10px;">SOCIAL_FREQUENCY</p>
+                    <a href="https://instagram.com/jhorassic" target="_blank">INSTAGRAM // @JHORASSIC</a>
+                </div>
+
+                <div class="static-text">
+                    > STATUS: ENCRYPTION ACTIVE<br>
+                    > CHANNEL: 44.120.9Hz<br>
+                    > WARNING: THE IRON THRONE IS MONITORING ALL OUTBOUND SIGNALS.<br>
+                    > DIRECT_ACCESS: ADMIN@JHORASSIC.IO
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
