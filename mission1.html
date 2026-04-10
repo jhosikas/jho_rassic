@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VHAGAR - Tic Tac Toe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-red: #ff003c;
+            --neon-blue: #00d4ff;
+            --neon-green: #00ff88;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Orbitron", sans-serif; }
+
+        body {
+            background: transparent;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .mission-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 30px;
+        }
+
+        h2 {
+            color: var(--neon-red);
+            margin-bottom: 10px;
+            font-size: 16px;
+            letter-spacing: 3px;
+        }
+
+        #status {
+            font-size: 12px;
+            color: var(--neon-red);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            min-height: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .cell {
+            width: 80px;
+            height: 80px;
+            border: 2px solid var(--neon-red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            background: rgba(255, 0, 0, 0.05);
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .cell:hover { background: rgba(255, 0, 60, 0.15); }
+        .cell.locked { cursor: default; pointer-events: none; }
+
+        /* Completed banner */
+        #completed-banner {
+            display: none;
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--neon-green);
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .abort-btn {
+            margin-top: 24px;
+            background: none;
+            border: 1px solid white;
+            color: white;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 10px;
+            font-family: "Orbitron", sans-serif;
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+        .abort-btn:hover { background: rgba(255,255,255,0.1); box-shadow: 0 0 10px white; }
+    </style>
+</head>
+<body>
+<div class="mission-container">
+    <h2>TIC-TAC-TOE NODE</h2>
+    <div id="status">YOUR TURN</div>
+    <div class="grid" id="grid">
+        <div class="cell" onclick="handleInput(0)"></div>
+        <div class="cell" onclick="handleInput(1)"></div>
+        <div class="cell" onclick="handleInput(2)"></div>
+        <div class="cell" onclick="handleInput(3)"></div>
+        <div class="cell" onclick="handleInput(4)"></div>
+        <div class="cell" onclick="handleInput(5)"></div>
+        <div class="cell" onclick="handleInput(6)"></div>
+        <div class="cell" onclick="handleInput(7)"></div>
+        <div class="cell" onclick="handleInput(8)"></div>
+    </div>
+    <div id="completed-banner">— NODE SECURED —</div>
+    <button class="abort-btn" onclick="abortMission()">ABORT MISSION</button>
+</div>
+
+<script>
+    const MISSION_NAME = "VHAGAR";
+
+    let board = ["","","","","","","","",""];
+    let gameActive = true;
+    let isCompleted = false;
+
+    // ── Restore state from URL param ─────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get('state');
+        if (raw) {
+            try {
+                const saved = JSON.parse(decodeURIComponent(raw));
+                if (saved.board) restoreBoard(saved.board, saved.completed);
+            } catch (e) { /* no saved state, start fresh */ }
+        }
+    });
+
+    function restoreBoard(savedBoard, completed) {
+        board = savedBoard;
+        const cells = document.querySelectorAll('.cell');
+        const status = document.getElementById('status');
+
+        board.forEach((val, i) => {
+            if (val === "X") {
+                cells[i].innerText = "X";
+                cells[i].style.color = "#ff003c";
+            } else if (val === "O") {
+                cells[i].innerText = "O";
+                cells[i].style.color = "#00d4ff";
+            }
+        });
+
+        if (completed) {
+            isCompleted = true;
+            gameActive = false;
+            status.innerText = "NODE SECURED!";
+            status.style.color = "#00ff88";
+            document.getElementById('completed-banner').style.display = 'block';
+            // Lock all cells so completed board is view-only
+            cells.forEach(c => c.classList.add('locked'));
+        }
+    }
+
+    // ── Save current board state to parent ───────────────────────────
+    function saveState(completed = false) {
+        window.parent.postMessage({
+            action: "saveState",
+            mission: MISSION_NAME,
+            state: { board, completed }
+        }, "*");
+    }
+
+    function handleInput(i) {
+        const cells = document.querySelectorAll('.cell');
+        const status = document.getElementById('status');
+
+        if (board[i] !== "" || !gameActive || isCompleted) return;
+
+        // PLAYER MOVE
+        board[i] = "X";
+        cells[i].innerText = "X";
+        cells[i].style.color = "#ff003c";
+        saveState(false); // auto-save after every move
+
+        if (checkWinner("X")) {
+            status.innerText = "NODE SECURED!";
+            status.style.color = "#00ff88";
+            document.getElementById('completed-banner').style.display = 'block';
+            cells.forEach(c => c.classList.add('locked'));
+            gameActive = false;
+            isCompleted = true;
+            saveState(true);
+            setTimeout(() => {
+                window.parent.postMessage({ action: "missionComplete", mission: MISSION_NAME }, "*");
+            }, 1000);
+            return;
+        }
+
+        if (isDraw()) {
+            status.innerText = "DRAW — STALEMATE";
+            gameActive = false;
+            saveState(false);
+            return;
+        }
+
+        // COMPUTER MOVE
+        status.innerText = "AI THINKING...";
+        setTimeout(() => {
+            if (!gameActive) return;
+            let empty = board.map((s, idx) => s === "" ? idx : null).filter(v => v !== null);
+            if (empty.length > 0) {
+                let choice = empty[Math.floor(Math.random() * empty.length)];
+                board[choice] = "O";
+                cells[choice].innerText = "O";
+                cells[choice].style.color = "#00d4ff";
+                saveState(false); // auto-save after AI move
+
+                if (checkWinner("O")) {
+                    status.innerText = "SYSTEM BREACHED!";
+                    status.style.color = "#00d4ff";
+                    gameActive = false;
+                    saveState(false);
+                } else if (isDraw()) {
+                    status.innerText = "DRAW — STALEMATE";
+                    gameActive = false;
+                    saveState(false);
+                } else {
+                    status.innerText = "YOUR TURN";
+                }
+            }
+        }, 600);
+    }
+
+    function checkWinner(player) {
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        return wins.some(combo =>
+            board[combo[0]] === player &&
+            board[combo[1]] === player &&
+            board[combo[2]] === player
+        );
+    }
+
+    function isDraw() {
+        return board.every(cell => cell !== "");
+    }
+
+    function abortMission() {
+        window.parent.postMessage({ action: "closeGame" }, "*");
+    }
+</script>
+</body>
+</html>

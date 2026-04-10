@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYRAX - Memory Grid</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-red: #ff003c;
+            --neon-blue: #00d4ff;
+            --neon-green: #00ff88;
+            --bg: #050505;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Orbitron',sans-serif; }
+        body {
+            background: var(--bg); color:white;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            min-height:100vh; padding:20px;
+        }
+
+        h2 { color:var(--neon-red); font-size:14px; letter-spacing:4px; margin-bottom:6px; }
+        #status {
+            font-family:'Share Tech Mono',monospace;
+            font-size:11px; color:var(--neon-red); letter-spacing:3px;
+            margin-bottom:14px; min-height:18px; text-align:center;
+        }
+        #pairs-info {
+            font-family:'Share Tech Mono',monospace;
+            font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:2px;
+            margin-bottom:12px;
+        }
+        #pairs-info span { color:var(--neon-blue); }
+
+        /* 6x6 GRID */
+        .grid {
+            display:grid;
+            grid-template-columns: repeat(6, 68px);
+            grid-template-rows: repeat(6, 68px);
+            gap:8px;
+        }
+
+        /* CARD */
+        .card {
+            width:68px; height:68px;
+            perspective:600px; cursor:pointer;
+        }
+        .card-inner {
+            width:100%; height:100%;
+            position:relative; transform-style:preserve-3d;
+            transition:transform 0.45s cubic-bezier(0.4,0,0.2,1);
+        }
+        .card.flipped .card-inner { transform:rotateY(180deg); }
+        .card.matched .card-inner { transform:rotateY(180deg); }
+        .card.matched .card-front {
+            border-color:var(--neon-green);
+            box-shadow:0 0 18px rgba(0,255,136,0.6);
+        }
+
+        .card-back, .card-front {
+            position:absolute; width:100%; height:100%;
+            backface-visibility:hidden; border-radius:6px;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .card-back {
+            background:#0a0a0a;
+            border:2px solid rgba(255,0,60,0.4);
+            font-size:22px; color:rgba(255,0,60,0.4);
+        }
+        .card-back::after { content:'?'; }
+        .card-front {
+            background:#0d0d0d;
+            border:2px solid var(--neon-red);
+            transform:rotateY(180deg);
+            overflow:hidden;
+        }
+        .card-front img {
+            width:100%; height:100%; object-fit:cover; border-radius:4px;
+        }
+
+        /* Fallback emoji when image not found */
+        .card-front .emoji-fallback {
+            font-size:28px;
+        }
+
+        #completed-banner {
+            display:none; margin-top:18px;
+            font-size:13px; color:var(--neon-green); letter-spacing:4px;
+            text-shadow:0 0 15px var(--neon-green);
+        }
+
+        .abort-btn {
+            margin-top:18px; background:none; border:1px solid rgba(255,255,255,0.2);
+            color:rgba(255,255,255,0.4); padding:8px 20px; cursor:pointer;
+            font-size:9px; font-family:'Orbitron'; letter-spacing:2px; transition:0.3s;
+        }
+        .abort-btn:hover { border-color:white; color:white; }
+    </style>
+</head>
+<body>
+    <h2>MEMORY GRID — NODE 02</h2>
+    <div id="status">SCAN AND MATCH ALL PAIRS</div>
+    <div id="pairs-info">PAIRS MATCHED: <span id="pair-count">0</span> / 18</div>
+
+    <div class="grid" id="grid"></div>
+
+    <div id="completed-banner">— NODE SECURED —</div>
+    <button class="abort-btn" onclick="abortMission()">ABORT MISSION</button>
+
+<script>
+    const MISSION_NAME = "SYRAX";
+
+    // 9 unique images × 4 copies each = 36 cards for 6×6 grid
+    const IMAGES = [
+        'mis2img1.jpg','mis2img2.jpg','mis2img3.jpg',
+        'mis2img4.jpg','mis2img5.jpg','mis2img6.jpg',
+        'mis2img7.jpg','mis2img8.jpg','mis2img9.jpg'
+    ];
+
+    // Emojis as fallback if images aren't loaded
+    const FALLBACK = ['🦖','🦕','🔥','⚡','🧬','💀','🌋','🦴','🐉'];
+
+    let cards = [];       // shuffled array of {id, img, fallback}
+    let flipped = [];     // currently face-up (unmatched) cards
+    let matched = 0;
+    let locked = false;
+    let isCompleted = false;
+
+    function buildDeck() {
+        let deck = [];
+        IMAGES.forEach((img, idx) => {
+            for (let c = 0; c < 4; c++) {
+                deck.push({ id: idx, img, fallback: FALLBACK[idx] });
+            }
+        });
+        // Shuffle
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        return deck;
+    }
+
+    function renderGrid(savedFlipped) {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        cards.forEach((card, i) => {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.dataset.index = i;
+            el.dataset.id = card.id;
+            el.innerHTML = `
+                <div class="card-inner">
+                    <div class="card-back"></div>
+                    <div class="card-front">
+                        <img src="${card.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <div class="emoji-fallback" style="display:none">${card.fallback}</div>
+                    </div>
+                </div>`;
+            el.addEventListener('click', () => handleClick(el, i));
+            grid.appendChild(el);
+        });
+    }
+
+    function handleClick(el, index) {
+        if (locked || isCompleted) return;
+        if (el.classList.contains('flipped') || el.classList.contains('matched')) return;
+
+        el.classList.add('flipped');
+        flipped.push({ el, index, id: cards[index].id });
+
+        if (flipped.length === 2) {
+            locked = true;
+            const [a, b] = flipped;
+
+            if (a.id === b.id && a.index !== b.index) {
+                // MATCH
+                setTimeout(() => {
+                    a.el.classList.add('matched');
+                    b.el.classList.add('matched');
+                    a.el.classList.remove('flipped');
+                    b.el.classList.remove('flipped');
+                    flipped = [];
+                    matched++;
+                    document.getElementById('pair-count').innerText = matched;
+                    locked = false;
+                    saveState();
+                    if (matched === 18) winMission();
+                }, 500);
+            } else {
+                // NO MATCH — flip back
+                setTimeout(() => {
+                    a.el.classList.remove('flipped');
+                    b.el.classList.remove('flipped');
+                    flipped = [];
+                    locked = false;
+                }, 900);
+            }
+        }
+    }
+
+    function winMission() {
+        isCompleted = true;
+        document.getElementById('status').innerText = 'NODE SECURED!';
+        document.getElementById('status').style.color = '#00ff88';
+        document.getElementById('completed-banner').style.display = 'block';
+        saveState(true);
+        setTimeout(() => {
+            window.parent.postMessage({ action: "missionComplete", mission: MISSION_NAME }, "*");
+        }, 1000);
+    }
+
+    function saveState(completed = false) {
+        const matchedIndices = [];
+        document.querySelectorAll('.card.matched').forEach(el => {
+            matchedIndices.push(parseInt(el.dataset.index));
+        });
+        window.parent.postMessage({
+            action: "saveState",
+            mission: MISSION_NAME,
+            state: { deck: cards.map(c => c.id), matchedIndices, matched, completed }
+        }, "*");
+    }
+
+    function restoreState(saved) {
+        if (!saved || !saved.deck) return;
+        // Rebuild cards from saved deck order
+        cards = saved.deck.map(id => ({ id, img: IMAGES[id], fallback: FALLBACK[id] }));
+        matched = saved.matched || 0;
+        document.getElementById('pair-count').innerText = matched;
+        renderGrid();
+
+        // Mark matched cards
+        if (saved.matchedIndices) {
+            saved.matchedIndices.forEach(idx => {
+                const el = document.querySelector(`[data-index="${idx}"]`);
+                if (el) { el.classList.add('matched'); el.classList.remove('flipped'); }
+            });
+        }
+
+        if (saved.completed) {
+            isCompleted = true;
+            document.getElementById('status').innerText = 'NODE SECURED!';
+            document.getElementById('status').style.color = '#00ff88';
+            document.getElementById('completed-banner').style.display = 'block';
+            document.querySelectorAll('.card').forEach(el => el.style.pointerEvents='none');
+        }
+    }
+
+    // ── INIT ─────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get('state');
+        if (raw) {
+            try {
+                const saved = JSON.parse(decodeURIComponent(raw));
+                if (saved.deck) { restoreState(saved); return; }
+            } catch(e) {}
+        }
+        // Fresh game
+        cards = buildDeck();
+        renderGrid();
+    });
+
+    function abortMission() {
+        window.parent.postMessage({ action: "closeGame" }, "*");
+    }
+</script>
+</body>
+</html>

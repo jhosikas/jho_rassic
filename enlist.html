@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JHOrassic - Session Access</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <style>
+       :root { 
+    /* The primary variable for red: #ff003c */
+    /* Let's redefine 'neon-red' as our new blue, so we don't break old color calls */
+    --neon-red: #00d4ff; /* This will be our main BLUE color */
+    
+    --neon-blue: #00d4ff; /* Extra definition, can stay */
+    --neon-green: #00ff88; /* Can stay for completed missions */
+}
+
+body {
+    background: #050505; color: white; font-family: 'Orbitron', sans-serif;
+    display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
+}
+
+.auth-box {
+    width: 400px; padding: 40px; 
+    
+    /* MODIFIED: Change red to blue */
+    border: 2px solid var(--neon-red); /* Will use the new blue value */
+    background: rgba(0,0,0,0.9); 
+    box-shadow: 0 0 20px var(--neon-red); /* Will use the new blue value */
+    text-align: center;
+}
+
+input {
+    width: 100%; padding: 12px; margin: 15px 0;
+    background: #111; 
+    
+    /* MODIFIED: Change input glow/border to blue */
+    border: 1px solid var(--neon-red); 
+    color: white;
+    font-family: 'Orbitron'; outline: none;
+}
+input:focus { 
+    /* MODIFIED: Focus glow also blue */
+    box-shadow: 0 0 10px var(--neon-red); 
+}
+
+button {
+    width: 100%; padding: 15px; 
+    
+    /* MODIFIED: Make the button background blue */
+    background: var(--neon-red); 
+    border: none;
+    color: white; cursor: pointer; font-family: 'Orbitron'; text-transform: uppercase;
+    letter-spacing: 2px; transition: 0.3s;
+}
+
+/* Ensure the title uses the main color if needed */
+h2#display-name {
+    color: var(--neon-red);
+}
+        button:hover { background: white; color: black; }
+        .stats-container { margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; }
+        .stat-row {
+            display: flex; justify-content: space-between;
+            margin-bottom: 10px; font-size: 13px;
+        }
+        .stat-row span:first-child { color: var(--neon-blue); }
+        .stat-row span:last-child { color: white; }
+        .stat-row.secured span { color: var(--neon-green) !important; }
+        #error-msg { color: var(--neon-red); font-size: 10px; margin-top: 5px; min-height: 16px; }
+#bg-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -2;
+    object-fit: cover;
+    
+    /* MODIFIED: Added blur (5px) and kept the darkness/saturation */
+    filter: brightness(0.5) saturate(0.7) blur(5px);
+    
+    /* Helps prevent white edges caused by blurring the video borders */
+    transform: scale(1.05); 
+}
+
+.video-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4); /* Extra layer of darkness */
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Ensure the auth-box looks good against a moving background */
+.auth-box {
+    position: relative;
+    z-index: 10;
+    backdrop-filter: blur(10px); /* Adds a modern frosted glass effect */
+    background: rgba(5, 5, 5, 0.85); /* Slightly transparent */
+}
+    </style>
+</head>
+<body>
+<div class="auth-box">
+
+    <!-- LOGIN -->
+    <div id="login-screen">
+        <h2 style="margin-bottom: 8px;">ENLIST OPERATIVE</h2>
+        <p style="font-size: 10px; color: #666; margin-bottom: 4px;">SESSION-ONLY CLEARANCE</p>
+        <div id="error-msg"></div>
+        <input type="text" id="codename" placeholder="ENTER CODENAME" maxlength="20"
+               onkeydown="if(event.key==='Enter') startSession()">
+        <button onclick="startSession()">INITIALIZE</button>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="profile-screen" style="display:none;">
+        <h2 id="display-name" style="color:var(--neon-red); margin-bottom: 4px;"></h2>
+        <p style="font-size: 9px; color: #444; letter-spacing: 3px; margin-bottom: 4px;">OPERATIVE ON DUTY</p>
+
+        <div class="stats-container">
+            <p style="font-size: 10px; color: #555; margin-bottom: 15px; letter-spacing: 2px;">SESSION ACTIVITY LOG</p>
+            <div id="stats-list"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="window.location.href='game.html'" style="background: var(--neon-red);">
+                MISSIONS
+            </button>
+            <button onclick="endSession()" style="background: #111; border: 1px solid #333; font-size: 10px;">
+                END SESSION
+            </button>
+        </div>
+
+        <button onclick="window.location.href='HOME.html'"
+                style="margin-top: 10px; background: #111; border: 1px solid #333; font-size: 10px;">
+            RETURN TO LOBBY
+        </button>
+    </div>
+
+</div>
+<video autoplay muted loop id="bg-video">
+    <source src="VIDEO2.mp4" type="video/mp4">
+</video>
+
+<div class="video-overlay"></div>
+
+<script>
+    function startSession() {
+        const name = document.getElementById('codename').value.trim();
+        const errorEl = document.getElementById('error-msg');
+
+        if (!name) {
+            errorEl.innerText = 'CODENAME REQUIRED';
+            return;
+        }
+        errorEl.innerText = '';
+
+        // Only initialize plays if no existing session
+        // (so refreshing enlist page doesn't wipe play counts)
+        const existing = sessionStorage.getItem('jhActiveSession');
+        if (!existing) {
+            const sessionData = {
+                user: name,
+                plays: { m1: 0, m2: 0, m3: 0, m4: 0, m5: 0 }
+            };
+            sessionStorage.setItem('jhActiveSession', JSON.stringify(sessionData));
+        } else {
+            // Update name only
+            try {
+                const data = JSON.parse(existing);
+                data.user = name;
+                sessionStorage.setItem('jhActiveSession', JSON.stringify(data));
+            } catch(e) {}
+        }
+
+        loadProfile();
+    }
+
+    function loadProfile() {
+        const raw = sessionStorage.getItem('jhActiveSession');
+        if (!raw) return;
+
+        let data;
+        try { data = JSON.parse(raw); } catch(e) { return; }
+
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('profile-screen').style.display = 'block';
+        document.getElementById('display-name').innerText = data.user.toUpperCase();
+
+        // Read mission completed states
+        const completed = {
+            m1: isCompleted('VHAGAR'),
+            m2: isCompleted('SYRAX'),
+            m3: isCompleted('DRACARYS'),
+            m4: isCompleted('RHAEGAL'),
+            m5: isCompleted('BALERION'),
+        };
+
+        const list = document.getElementById('stats-list');
+        list.innerHTML = ['m1','m2','m3','m4','m5'].map((key, i) => {
+            const num = i + 1;
+            const plays = data.plays[key] || 0;
+            const done = completed[key];
+            return `
+                <div class="stat-row ${done ? 'secured' : ''}">
+                    <span>MISSION ${num}</span>
+                    <span>${done ? 'SECURED ✓' : plays + ' PLAYS'}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function isCompleted(missionKey) {
+        try {
+            const raw = sessionStorage.getItem(`jhOrassic_${missionKey}`);
+            if (!raw) return false;
+            return JSON.parse(raw).completed === true;
+        } catch(e) { return false; }
+    }
+
+    function endSession() {
+        // Clear everything and go back to login
+        sessionStorage.clear();
+        location.reload();
+    }
+
+    window.onload = () => {
+        if (sessionStorage.getItem('jhActiveSession')) loadProfile();
+    };
+</script>
+</body>
+</html>

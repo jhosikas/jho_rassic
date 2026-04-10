@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission 3: Sequence Breaker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-red: #ff003c;
+            --bg-black: #050505;
+        }
+
+        body {
+            background: var(--bg-black);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h2 { color: var(--neon-red); letter-spacing: 2px; margin-bottom: 10px; }
+        #status { font-size: 14px; margin-bottom: 20px; color: var(--neon-red); text-shadow: 0 0 5px var(--neon-red); }
+
+        /* THE GRID OF 4 NODES */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 120px);
+            gap: 20px;
+        }
+
+        .node {
+            width: 120px;
+            height: 120px;
+            border: 3px solid var(--neon-red);
+            background: rgba(255, 0, 60, 0.1);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        /* The "Flash" effect when a node is active */
+        .node.active {
+            background: var(--neon-red);
+            box-shadow: 0 0 40px var(--neon-red);
+            transform: scale(0.95);
+        }
+
+        button {
+            margin-top: 30px;
+            background: none;
+            border: 2px solid white;
+            color: white;
+            padding: 10px 25px;
+            font-family: 'Orbitron';
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: white;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>SEQUENCE BREAKER</h2>
+    <div id="status">PRESS START TO INITIALIZE</div>
+
+    <div class="grid">
+        <div class="node" id="0" onclick="playerClick(0)"></div>
+        <div class="node" id="1" onclick="playerClick(1)"></div>
+        <div class="node" id="2" onclick="playerClick(2)"></div>
+        <div class="node" id="3" onclick="playerClick(3)"></div>
+    </div>
+
+    <button onclick="startGame()">START SCAN</button>
+<script>
+let gameSequence = [];
+let playerSequence = [];
+let level = 0;
+let canClick = false;
+let flashSpeed = 800; // Starts slow
+
+function startGame() {
+    gameSequence = [];
+    level = 0;
+    flashSpeed = 800; 
+    nextRound();
+}
+
+function nextRound() {
+    playerSequence = [];
+    canClick = false;
+    level++;
+    
+    // Increase speed every round!
+    if (flashSpeed > 200) flashSpeed -= 100; 
+
+    document.getElementById('status').innerText = `ENCRYPTION LEVEL ${level} - SPEED: ${1000 - flashSpeed}MHz`;
+    
+    gameSequence.push(Math.floor(Math.random() * 4));
+    setTimeout(playSequence, 1000);
+}
+
+function playSequence() {
+    let i = 0;
+    const interval = setInterval(() => {
+        flashNode(gameSequence[i]);
+        i++;
+        if (i >= gameSequence.length) {
+            clearInterval(interval);
+            setTimeout(() => {
+                canClick = true;
+                document.getElementById('status').innerText = "INPUT REQUIRED...";
+            }, 400);
+        }
+    }, flashSpeed); // Use the dynamic speed variable here
+}
+
+function flashNode(id) {
+    const node = document.getElementById(id);
+    node.classList.add('active');
+    // Sound effect could go here
+    setTimeout(() => node.classList.remove('active'), flashSpeed / 2);
+}
+
+function playerClick(id) {
+    if (!canClick) return;
+
+    flashNode(id);
+    playerSequence.push(id);
+
+    const currentIndex = playerSequence.length - 1;
+    
+    if (playerSequence[currentIndex] !== gameSequence[currentIndex]) {
+        // SUDDEN DEATH LOGIC
+        document.getElementById('status').innerText = "CRITICAL ERROR: SYSTEM LOCKDOWN";
+        document.body.style.backgroundColor = "#200"; // Red tint for danger
+        canClick = false;
+        
+        // After 2 seconds, reset the mission
+        setTimeout(() => {
+            document.body.style.backgroundColor = "#050505";
+            startGame(); 
+        }, 2000);
+        return;
+    }
+
+    if (playerSequence.length === gameSequence.length) {
+        canClick = false;
+        // Increase win condition to Level 6 for difficulty
+        if (level === 6) { 
+    document.getElementById('status').innerText = "CORE BYPASSED! MISSION SUCCESS.";
+    setTimeout(() => {
+        window.parent.postMessage({ action: "missionComplete", mission: "RHAEGAL" }, "*");
+    }, 1000);
+}
+ else {
+            document.getElementById('status').innerText = "SEQUENCE VERIFIED.";
+            setTimeout(nextRound, 800);
+        }
+    }
+}
+</script>
+</body>
+</html>

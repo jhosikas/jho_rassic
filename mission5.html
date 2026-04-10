@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BALERION: Cyber Decryptor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-red: #ff003c;
+            --neon-blue: #00d4ff;
+            --bg-black: #050505;
+        }
+
+        body {
+            background: var(--bg-black);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .terminal-box {
+            width: 450px;
+            padding: 30px;
+            border: 4px solid var(--neon-red);
+            background: rgba(0, 0, 0, 0.9);
+            box-shadow: 0 0 50px rgba(255, 0, 60, 0.4);
+            text-align: center;
+            position: relative;
+        }
+
+        h2 { color: var(--neon-red); font-size: 18px; margin-bottom: 5px; letter-spacing: 3px; }
+
+        /* --- TIMER BAR --- */
+        #timer-container {
+            width: 100%;
+            height: 6px;
+            background: #222;
+            margin: 15px 0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #timer-progress {
+            width: 100%;
+            height: 100%;
+            background: var(--neon-red);
+            box-shadow: 0 0 10px var(--neon-red);
+            transition: width 0.1s linear;
+        }
+
+        #status {
+            font-size: 12px;
+            color: var(--neon-red);
+            height: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* --- SCRAMBLED TEXT DISPLAY --- */
+        #scrambled-display {
+            font-size: 32px;
+            letter-spacing: 12px;
+            margin: 40px 0;
+            color: var(--neon-blue);
+            font-weight: bold;
+            min-height: 40px;
+            transition: 0.1s;
+        }
+
+        /* GLITCH ANIMATION */
+        @keyframes glitch {
+            0% { transform: translate(0); text-shadow: 2px 2px var(--neon-red); }
+            20% { transform: translate(-3px, 2px); color: #fff; }
+            40% { transform: translate(3px, -2px); text-shadow: -2px -2px var(--neon-blue); }
+            100% { transform: translate(0); }
+        }
+
+        .active-glitch {
+            animation: glitch 0.2s linear infinite;
+        }
+
+        /* --- INPUT FIELD --- */
+        input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--neon-red);
+            color: white;
+            padding: 15px;
+            width: 80%;
+            text-align: center;
+            font-family: 'Orbitron';
+            font-size: 20px;
+            outline: none;
+            text-transform: uppercase;
+        }
+
+        input:focus {
+            box-shadow: 0 0 15px var(--neon-red);
+        }
+
+        button {
+            margin-top: 25px;
+            background: var(--neon-red);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            font-family: 'Orbitron';
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 20px white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="terminal-box">
+        <h2>CYBER DECRYPTOR</h2>
+        
+        <div id="timer-container">
+            <div id="timer-progress"></div>
+        </div>
+        
+        <div id="status">INITIALIZING OVERRIDE...</div>
+
+        <div id="scrambled-display">------</div>
+
+        <input type="text" id="user-input" placeholder="ENTER CODE" maxlength="15" autocomplete="off">
+
+        <br>
+        <button onclick="checkCode()">SUBMIT OVERRIDE</button>
+    </div>
+
+    <script>
+        const wordList = ["STYLESHEET", "PROTOTYPE", "ACCESIBILITY", "FIDELITY", "CONTRAST", "JAVASCRIPT", "ENCRYPTION"];
+        let solution = "";
+        let timeLeft = 20; // 20 seconds
+        const totalTime = 20;
+        let gameActive = false;
+        let timerInterval;
+        let glitchInterval;
+
+        function initGame() {
+            // Select random word
+            solution = wordList[Math.floor(Math.random() * wordList.length)];
+            timeLeft = totalTime;
+            gameActive = true;
+            document.getElementById('user-input').value = "";
+            document.getElementById('status').innerText = "DECRYPT SIGNAL BEFORE LOCKOUT";
+            document.getElementById('status').style.color = "#ff003c";
+
+            // Start the UI Timer
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 100);
+
+            // Start the Shifting Glitch
+            clearInterval(glitchInterval);
+            updateScramble(); // Initial show
+            glitchInterval = setInterval(updateScramble, 2500); // Shuffle every 2.5s
+        }
+
+        function updateScramble() {
+            if (!gameActive) return;
+            const display = document.getElementById('scrambled-display');
+            
+            // Scramble the word
+            let scrambled = solution.split('').sort(() => Math.random() - 0.5).join('');
+            display.innerText = scrambled;
+
+            // Trigger visual glitch
+            display.classList.add('active-glitch');
+            setTimeout(() => display.classList.remove('active-glitch'), 200);
+        }
+
+        function updateTimer() {
+            if (!gameActive) return;
+            timeLeft -= 0.1;
+            const percent = (timeLeft / totalTime) * 100;
+            document.getElementById('timer-progress').style.width = percent + "%";
+
+            if (timeLeft <= 0) {
+                gameOver(false);
+            }
+        }
+
+        function checkCode() {
+            if (!gameActive) return;
+            const input = document.getElementById('user-input').value.toUpperCase().trim();
+
+            if (input === solution) {
+                gameOver(true);
+            } else {
+                // Penalty for wrong guess
+                timeLeft -= 3; 
+                document.getElementById('status').innerText = "SIGNAL DEGRADING: -3 SECONDS";
+                document.getElementById('user-input').value = "";
+                // Visual feedback for error
+                document.querySelector('.terminal-box').style.borderColor = "white";
+                setTimeout(() => document.querySelector('.terminal-box').style.borderColor = "#ff003c", 200);
+            }
+        }
+
+        function gameOver(isWin) {
+            gameActive = false;
+            clearInterval(timerInterval);
+            clearInterval(glitchInterval);
+
+            if (isWin) {
+                document.getElementById('status').innerText = "SUCCESS: ACCESS GRANTED";
+                document.getElementById('status').style.color = "#00ff41";
+                document.getElementById('timer-progress').style.background = "#00ff41";
+                setTimeout(() => {
+window.parent.postMessage({ action: "missionComplete", mission: "BALERION" }, "*");
+}, 1000);
+            } else {
+                document.getElementById('status').innerText = "CRITICAL FAILURE: LOCKED OUT";
+                document.getElementById('timer-progress').style.width = "0%";
+                setTimeout(() => {
+                    alert("LOCKOUT DETECTED. REBOOTING TERMINAL...");
+                    initGame();
+                }, 1000);
+            }
+        }
+
+        // Allow "Enter" key to submit
+        document.getElementById('user-input').addEventListener("keyup", function(event) {
+            if (event.key === "Enter") checkCode();
+        });
+
+        // Start automatically on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>
